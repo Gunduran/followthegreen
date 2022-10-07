@@ -98,6 +98,8 @@ def fileread(conn, path, icao, x):
     while not x.loaded and scenery:  # while we have not found our airport and there are more scenery packs
         if re.match("^SCENERY_PACK", scenery, flags=0):
             scenery_pack_dir = scenery[13:-1]
+            if scenery_pack_dir == "*GLOBAL_AIRPORTS*":
+                scenery_pack_dir = os.path.join(path,"Global Scenery", "Global Airports")
             x.status = "search : " + scenery_pack_dir
             conn.send(x)
             scenery_pack_apt = os.path.join(path, scenery_pack_dir, "Earth nav data", "apt.dat")

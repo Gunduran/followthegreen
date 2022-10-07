@@ -70,7 +70,8 @@ class ShowTaxiways:
         # Note: Aircraft should be "created" outside of FollowTheGreen
         # and passed to start or getAirport. That way, we can instanciate
         # individual FollowTheGreen for numerous aircrafts.
-        self.aircraft = Aircraft("A321", "D", "OO-123", "PO-123")
+
+        self.aircraft = Aircraft("DEDHA")
 
         pos = self.aircraft.position()
         if pos is None:
@@ -100,7 +101,7 @@ class ShowTaxiways:
     def showTaxiways(self, airport):
         if not self.airport:
             self.airport = Airport(airport)
-            status = self.airport.prepare_old()  # [ok, errmsg]
+            status = self.airport.prepare_new(self.ui)  # [ok, errmsg]
             if not status[0]:
                 logging.debug("ShowTaxiways::showTaxiways: airport not ready: %s" % (status[1]))
                 return self.ui.sorry(status[1])

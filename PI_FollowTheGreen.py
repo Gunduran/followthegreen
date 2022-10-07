@@ -3,9 +3,20 @@
 from traceback import print_exc
 import xp
 from followthegreen import FollowTheGreen
+"""
+     if running on xppython3 3.1.3 or later the reload of the modules will not work like it woked with 3.1.2
+     the reload() from the import lib might work for some cases, but as the __init__() will not be reloaded
+     the bytecode still remains the same.... Need to see a solution, until then - for development - stay on 3.1.2
+
+from importlib import reload
+import followthegreen            # Only needed for development, when dynamically changing the code
+result = reload(followthegreen)  # and using the XPPython3 reload function.
+from followthegreen import FollowTheGreen
+     
+"""
 
 
-RELEASE = "1.3.0a"
+RELEASE = "1.3.0b"
 
 class PythonInterface:
 

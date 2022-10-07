@@ -175,6 +175,8 @@ class Airport:
             if re.match("^SCENERY_PACK", scenery, flags=0):
                 logging.debug("SCENERY_PACK %s", scenery.rstrip())
                 scenery_pack_dir = scenery[13:-1]
+                if scenery_pack_dir == "*GLOBAL_AIRPORTS*":
+                    scenery_pack_dir = os.path.join(SYSTEM_DIRECTORY, "Global Scenery", "Global Airports")
                 scenery_pack_apt = os.path.join(scenery_pack_dir, "Earth nav data", "apt.dat")
                 logging.debug("APT.DAT %s", scenery_pack_apt)
 
