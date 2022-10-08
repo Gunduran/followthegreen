@@ -1,8 +1,11 @@
 # followthegreen
-Follow the green, an X-Plane ATC A-SMGCS experience
+Follow the green, an X-Plane ATC A-SMGCS experience (Originally from devleaks)
+
 Additions by Gunduran (Detlev Hoffmann)
 
 Recent changes:
+* Is working for XP12 - Repsecting the *Global Scenery* Folder
+* Is loading asynchronously using a separate process (Working for Follow the green and Show Taxiways)
 * Now using the airport data to respect the Taxiway conditions. 
   If in the apt.dat taxiways are classified with ICAO Airdome Reference Codes (A-F), it will be mapped against the Airplane ICAO code. 
   The list of Airplane codes comes from the FAA and there is a small step of mapping the FAA Aircaft Design Group to the Airdome Reference Code embedded.
