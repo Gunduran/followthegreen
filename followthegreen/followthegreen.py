@@ -121,9 +121,11 @@ class FollowTheGreen:
             self.airport = Airport(airport)
             # Info 4 to 8 in airport.prepare()
             status = self.airport.prepare_new(self.ui)  # [ok, errmsg] ==> loading in flight loop!
+            logging.debug("FollowTheGreen::getDestination: Multiprocessing initialized")
         else:
-            return self.getDestination_cont(self.airport)
-        return self.ui.promptForWindow()
+            logging.debug("FollowTheGreen::getDestination: airport already loaded")
+            return self.ui.promptForDestination()
+        return 
 
     def getDestination_cont(self, airport):
         self.airport = airport
@@ -164,7 +166,10 @@ class FollowTheGreen:
 
     def printTaxiInstructions(self, route):
         """Assuming a route has been found
-        first only for debugging the Taxiway in clear letters"""
+        first only for debugging the Taxiway in clear letters
+        minipython:
+        instance = getPluginInstance('followthegreens.xppython3')
+        instance.followTheGreen   will reach out to this context"""
         # Example Cologne if you come from W and need to go to 24 you will taxi via
         # T D A A3 and D
         # so, D will be in 2 times.
@@ -172,34 +177,71 @@ class FollowTheGreen:
         currVertex = graph.get_vertex(route.route[0])
         stopVertexes = []
         logging.debug("FollowTheGreen::printTaxiInstructions: Stoppbars %s", len(self.lights.stopbars))
-        # if len(self.lights.stopbars) > 0:
-        #     for stopVertex in self.lights.stopbars:
-        #         logging.debug("FollowTheGreen::printTaxiInstructions: Stoppbar at position %s", vars(stopVertex))
-        #         # stopVertexes.add(stopVertex["position"])
+        if len(self.lights.stopbars) > 0:
+            for stopVertex in self.lights.stopbars:
+                logging.debug("FollowTheGreen::printTaxiInstructions: Stoppbar at position %s", vars(stopVertex))
+                stopVertexes.append(stopVertex.get_position())
         taxiway = {}
         key = 1
+        routing = ""
+        stop_added = ""
+        stop_signal = False
+        rwy = ""
         for i in range(1, len(route.route)):
             nextVertex = graph.get_vertex(route.route[i])
             thisEdge = graph.get_edge(currVertex.id, nextVertex.id)
-            if nextVertex in stopVertexes:
+            logging.debug("FollowTheGreen::printTaxiInstructions: General full dump %s edge %s Stop-signal %s", str(i), thisEdge.mkActives(), stop_signal)
+            if currVertex in stopVertexes:
+                # occours only once (not in sequence with next edge)
+                stop_signal = True
                 key += 1
-                taxiway[key] = [thisEdge.name, currVertex.id, nextVertex.id, ""]
-            if "taxiway" in thisEdge.usage:
+                taxiway[key] = ["" , currVertex.id, nextVertex.id, ""]
+                logging.debug("FollowTheGreen::printTaxiInstructions: Hold Short full dump thisEdge: %s", thisEdge.mkActives())
+            if stop_signal:
+                # stay here until runway left
+                logging.debug("FollowTheGreen::printTaxiInstructions: Stop Signal added (line): %s", str(i))
+                if len(thisEdge.mkActives()) == 0:
+                    # leave loop inside stop bar area
+                    logging.debug("FollowTheGreen::printTaxiInstructions: No longer in stop area (line): %s", str(i))
+                    stop_signal = False
+                    rwy = ""
+                elif rwy == "":
+                    logging.debug("FollowTheGreen::printTaxiInstructions: Runway not yet set (line): %s", str(i))
+                    designations = thisEdge.active
+                    logging.debug("FollowTheGreen::printTaxiInstructions: Hold Short full dump thisEdge: %s", designations)
+                    for a in designations:
+                        if a.runways:
+                            rwy = a.runways[0]
+                            if rwy != self.destination and a.runways[1] == self.destination:
+                                rwy = a.runways[1]
+                    taxiway[key] = ["Hold Short Runway " + str(rwy) , currVertex.id, nextVertex.id, ""]
+                    logging.debug("FollowTheGreen::printTaxiInstructions: Hold Short added: %s", taxiway[key])
+
+            elif "taxiway" in thisEdge.usage:
                 taxiway_type = thisEdge.usage.removeprefix("taxiway_")
                 if len(taxiway) > 0:
                     # logging.debug("FollowTheGreen::printTaxiInstructions: Key: %s", taxiway[key])
-                    if thisEdge.name != taxiway[key][0]:
+                    if thisEdge.name != taxiway[key][0] and thisEdge.name != stop_added:
                         key += 1
                         taxiway[key] = [thisEdge.name, currVertex.id, nextVertex.id, taxiway_type]
+                        stop_added = ""
                     else:
-                        taxiway[key] = [thisEdge.name, taxiway[key][1], nextVertex.id, taxiway_type]
+                        taxiway[key] = [taxiway[key][0], taxiway[key][1], nextVertex.id, taxiway_type]
                 else:
                     taxiway[key] = [thisEdge.name, currVertex.id, nextVertex.id, taxiway_type]
                     # logging.debug("FollowTheGreen::printTaxiInstructions: Taxiway %s", taxiway)
                     # logging.debug("FollowTheGreen::printTaxiInstructions: Taxiway 1st %s", taxiway[1][0])
             currVertex = nextVertex
+        logging.debug("FollowTheGreen::printTaxiInstructions: Taxiway %s", str(len(taxiway)))
         if len(taxiway) > 0:
-            logging.debug("FollowTheGreen::printTaxiInstructions: Taxiway %s", taxiway)
+            for step in taxiway:
+                if len(routing) > 0: 
+                    routing = "".join([routing, " , ", taxiway[step][0]])
+                else:
+                    routing = taxiway[step][0]
+            logging.debug("FollowTheGreen::printTaxiInstructions: Taxiway %s", routing)
+            
+        return routing
 
 
     def followTheGreen(self, destination, newGreen=False):
@@ -265,13 +307,15 @@ class FollowTheGreen:
         # Info 14
         logging.info("FollowTheGreen::followTheGreen: Flightloop started.")
 
-        self.printTaxiInstructions(route)  # DH - Test
+        routing = self.printTaxiInstructions(route)  # DH - Test
 
         # Hint: distance and heading to first light
         if initdiff > 20 or initdist > 200:
             XPLMSpeakString("Follow the green. Taxiway is at about %d meters heading %d." % (initdist, initbrgn))
         else:
             XPLMSpeakString("Follow the green.")
+        
+        XPLMSpeakString("Taxi via %s." % (routing))
 
         # self.segment = 0
         if self.lights.segments == 0:  # just one segment

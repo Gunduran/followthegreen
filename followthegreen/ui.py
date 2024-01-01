@@ -210,7 +210,7 @@ class UIUtil:
 
         button = "None"
         prompt = "Wait while loading"
-        text   = "LOADING"
+        text   = "LOADING ..."
 
         widgetWindow = self.window([
             welcome,

@@ -76,7 +76,8 @@ class MyLoadingFlightLoop:
             logging.debug("mp_flightloop::myFLCB: Flight loop pipe closed or error " + str(e.errno))
             self.stopFlightLoop()
             self.mc.prepare()
-            self.ui.promptForDestination()
+            self.ui.ftg.getDestination_cont(self.mc)
+            # self.ui.promptForDestination()
             self.ui.showMainWindow()
         return FLIGHT_LOOPS
 

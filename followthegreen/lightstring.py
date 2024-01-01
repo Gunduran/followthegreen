@@ -177,6 +177,9 @@ class Stopbar:
         for light in self.lights:
             light.destroy()
 
+    def get_position(self):
+        return self.position
+
 
 class LightString:
     def __init__(self):
